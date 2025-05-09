@@ -51,29 +51,30 @@ class App:
     def __init__(self, master):
         self.master = master
         master.title("AES-256 File Encryptor")
-        master.geometry("400x300")  # Устанавливаем фиксированный размер окна
+        master.geometry("400x300")
+        master.configure(bg='#f0f0f0')
 
-        self.label = tk.Label(master, text="Введите пароль для шифрования/дешифрования:")
+        self.label = tk.Label(master, text="Введите пароль для шифрования/дешифрования:", bg='#f0f0f0')
         self.label.pack(pady=10)
 
         self.password_entry = tk.Entry(master, show='*')
         self.password_entry.pack(pady=5)
 
-        self.key_length_label = tk.Label(master, text="Длина ключа шифрования: 0 бит")
+        self.key_length_label = tk.Label(master, text="Длина ключа шифрования: 0 бит", bg='#f0f0f0')
         self.key_length_label.pack(pady=5)
 
         self.password_entry.bind("<KeyRelease>", self.update_key_length)
 
-        self.select_button = tk.Button(master, text="Выбрать файл", command=self.select_file)
+        self.select_button = tk.Button(master, text="Выбрать файл", command=self.select_file, bg='#4CAF50', fg='white')
         self.select_button.pack(pady=10)
 
-        self.selected_file_label = tk.Label(master, text="Выбранный файл: None")
+        self.selected_file_label = tk.Label(master, text="Выбранный файл: None", bg='#f0f0f0')
         self.selected_file_label.pack(pady=5)
 
-        self.encrypt_button = tk.Button(master, text="Зашифровать", command=self.encrypt_file)
+        self.encrypt_button = tk.Button(master, text="Зашифровать", command=self.encrypt_file, bg='#ff9800', fg='white')
         self.encrypt_button.pack(pady=5)
 
-        self.decrypt_button = tk.Button(master, text="Расшифровать", command=self.decrypt_file)
+        self.decrypt_button = tk.Button(master, text="Расшифровать", command=self.decrypt_file, bg='#f44336', fg='white')
         self.decrypt_button.pack(pady=5)
 
         self.file_path = ""
@@ -85,7 +86,7 @@ class App:
                 algorithm=hashes.SHA256(),
                 length=32,
                 salt=secrets.token_bytes(16),
-                iterations=100000,
+                iterations=100000
                 backend=default_backend()
             ).derive(password.encode())) * 8  # Длина в битах
             self.key_length_label.config(text=f"Длина ключа шифрования: {key_length} бит")
@@ -95,7 +96,7 @@ class App:
     def select_file(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if self.file_path:
-            self.selected_file_label.config(text=f"Выбранный файл: {self.file_path}")
+            self.selected_file_label.config(text=f"Выбранный файл: {os.path.basename(self.file_path)}")
 
     def encrypt_file(self):
         if not self.file_path:
@@ -159,8 +160,7 @@ class App:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось расшифровать файл: {str(e)}")
 
-    if __name__ == "__main__":
-        root = tk.Tk()
-        app = App(root)
-        root.mainloop()
-
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
