@@ -104,7 +104,7 @@ class App:
             lines = file.readlines()
             if len(lines) >= 3:
                 messagebox.showwarning("Ошибка",
-                                       "Файл уже зашифрован. Пожалуйста, расшифруйте его перед повторным шифрованием.")
+                                        "Файл уже зашифрован. Пожалуйста, расшифруйте его перед повторным шифрованием.")
                 return
 
         with open(self.file_path, 'r') as file:
@@ -151,8 +151,8 @@ class App:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось расшифровать файл: {str(e)}")
 
-    if __name__ == "__main__":
-        root = tk.Tk()
-        app = App(root)
-        root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
 
