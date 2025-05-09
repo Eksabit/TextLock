@@ -10,9 +10,11 @@ from cryptography.hazmat.primitives import hashes
 import secrets
 
 class AESCipher:
-    def __init__(self, password):
-        # Генерация соли и ключа
-        self.salt = secrets.token_bytes(16)
+    def __init__(self, password, salt=None):
+        if salt is None:
+            self.salt = secrets.token_bytes(16)
+        else:
+            self.salt = salt
         self.key = self.derive_key(password)
 
     def derive_key(self, password):
@@ -34,11 +36,10 @@ class AESCipher:
         ct = encryptor.update(padded_data) + encryptor.finalize()
         return base64.b64encode(iv).decode('utf-8'), base64.b64encode(ct).decode('utf-8'), base64.b64encode(self.salt).decode('utf-8')
 
-    def decrypt(self, iv, ct, salt):
+    def decrypt(self, iv, ct):
         iv = base64.b64decode(iv)
         ct = base64.b64decode(ct)
-        salt = base64.b64decode(salt)
-        self.key = self.derive_key(salt)
+        self.key = self.derive_key(self.salt)
 
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
@@ -50,26 +51,30 @@ class App:
     def __init__(self, master):
         self.master = master
         master.title("AES-256 File Encryptor")
+        master.geometry("400x300")  # Устанавливаем фиксированный размер окна
 
         self.label = tk.Label(master, text="Введите пароль для шифрования/дешифрования:")
-        self.label.pack()
+        self.label.pack(pady=10)
 
         self.password_entry = tk.Entry(master, show='*')
-        self.password_entry.pack()
+        self.password_entry.pack(pady=5)
 
         self.key_length_label = tk.Label(master, text="Длина ключа шифрования: 0 бит")
-        self.key_length_label.pack()
+        self.key_length_label.pack(pady=5)
 
         self.password_entry.bind("<KeyRelease>", self.update_key_length)
 
         self.select_button = tk.Button(master, text="Выбрать файл", command=self.select_file)
-        self.select_button.pack()
+        self.select_button.pack(pady=10)
+
+        self.selected_file_label = tk.Label(master, text="Выбранный файл: None")
+        self.selected_file_label.pack(pady=5)
 
         self.encrypt_button = tk.Button(master, text="Зашифровать", command=self.encrypt_file)
-        self.encrypt_button.pack()
+        self.encrypt_button.pack(pady=5)
 
         self.decrypt_button = tk.Button(master, text="Расшифровать", command=self.decrypt_file)
-        self.decrypt_button.pack()
+        self.decrypt_button.pack(pady=5)
 
         self.file_path = ""
 
@@ -90,7 +95,7 @@ class App:
     def select_file(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if self.file_path:
-            messagebox.showinfo("Файл выбран", f"Выбранный файл: {self.file_path}")
+            self.selected_file_label.config(text=f"Выбранный файл: {self.file_path}")
 
     def encrypt_file(self):
         if not self.file_path:
@@ -102,13 +107,22 @@ class App:
             messagebox.showwarning("Ошибка", "Введите пароль.")
             return
 
+        # Проверяем, зашифрован ли файл
+        with open(self.file_path, 'r') as file:
+            lines = file.readlines()
+            if len(lines) >= 3:
+                messagebox.showwarning("Ошибка",
+                                       "Файл уже зашифрован. Пожалуйста, расшифруйте его перед повторным шифрованием.")
+                return
+
         with open(self.file_path, 'r') as file:
             data = file.read()
 
         cipher = AESCipher(password)
         iv, ct, salt = cipher.encrypt(data)
 
-        with open(self.file_path + ".enc", 'w') as file:
+        # Сохраняем зашифрованные данные в том же файле
+        with open(self.file_path, 'w') as file:
             file.write(f"{salt}\n{iv}\n{ct}")
 
         messagebox.showinfo("Успех", "Файл успешно зашифрован!")
@@ -125,23 +139,28 @@ class App:
 
         with open(self.file_path, 'r') as file:
             lines = file.readlines()
+            if len(lines) < 3:
+                messagebox.showerror("Ошибка", "Файл не содержит необходимых данных для расшифровки.")
+                return
+
             salt = lines[0].strip()
             iv = lines[1].strip()
             ct = lines[2].strip()
 
-        cipher = AESCipher(password)
+        cipher = AESCipher(password, salt=base64.b64decode(salt))
         try:
-            decrypted_data = cipher.decrypt(iv, ct, salt)
+            decrypted_data = cipher.decrypt(iv, ct)
 
-            with open(self.file_path.replace(".enc", ".dec.txt"), 'w') as file:
+            # Сохраняем расшифрованные данные в том же файле
+            with open(self.file_path, 'w') as file:
                 file.write(decrypted_data.decode('utf-8'))
 
             messagebox.showinfo("Успех", "Файл успешно расшифрован!")
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось расшифровать файл: {str(e)}")
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    if __name__ == "__main__":
+        root = tk.Tk()
+        app = App(root)
+        root.mainloop()
 
